@@ -1,43 +1,16 @@
----
-title: "a- RAC1 survival analysis"
-author: "Katia Otterstedt"
-date: "`r Sys.Date()`"
-output: 
-  html_document:
-    toc: TRUE
-    toc_float: TRUE
----
-<style>
-body {
-text-align: justify}
-</style>
-
-# Introduction
-This script is designed for the execution of survival analysis utilizing TCGA clinical and RNA-Seq data. In this instance, we employ RNA-Seq and survival COAD (Colon Adenocarcinoma) data to conduct survival analysis. 
-
-## Libraries
-This analysis requires 'survminer' package for cutpoint determination based on survival prognosis and 'survival' package to prepare de fit.
-
-```{r message=FALSE, warning = FALSE}
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 library(tidyverse) # pipes (%>%) and dplyr data munging
 library(RTCGA.clinical) # survival times
 library(RTCGA.rnaseq) # genes expression
 library(survminer)
 library(survival)
-```
 
-# Retrieving survival data
-The initial phase of our analysis involves retrieving survival data pertaining to participants within our study cohort. This dataset encompasses the days until the last follow-up, denoting the absence (0) or presence (1) of our specific event of interest, which, in the context of this analysis, is mortality.
 
-```{r message=FALSE, warning = FALSE}
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 COAD.surv <- survivalTCGA(COAD.clinical)
-```
 
-# Extracting expression regarding gene of interest
 
-In light of our intention to stratify patients into two groups based on RAC1 expression, our initial step involves extracting this expression data from the TCGA repository. We begin by reformatting the extracted dataset for enhanced clarity and integrate this information with the previously obtained survival data.
-
-```{r message=FALSE, warning = FALSE}
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 #Look for gene ID and extract expression
 RAC1_expression <- expressionsTCGA(COAD.rnaseq,extract.cols = "RAC1|5879")
 #Rename variables and cut sample names
@@ -52,15 +25,9 @@ COAD.surv.Rac1 <- COAD.surv %>%
 
 COAD.surv.Rac1 <- COAD.surv.Rac1 %>%
   filter(!is.na(RAC1))
-```
 
-# Group stratification
 
-## Cutpoint determination
-Employing survival information and expression data, we invoke the 'surv_cutpoint' function to discern a precise cutpoint. The purpose of this cutpoint is to categorize patients according to their RAC1 expression levels.
-We generate the variable "gene of interest" so that the script can be modified and adapted to different analysis.
-
-```{r message=FALSE, warning = FALSE}
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 COAD.cut <- surv_cutpoint(
   COAD.surv.Rac1,
   time = "times",
@@ -79,12 +46,9 @@ median(COAD.surv.Rac1$RAC1, na.rm = TRUE)
 # Plotting the cutpoint
 plot(COAD.cut, "RAC1", palette = "npg")
 
-```
 
-## Patient stratification
-Subsequently, we classify our patients based on the previously established cutpoint.
 
-```{r message=FALSE, warning = FALSE}
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 COAD.cat <- surv_categorize(COAD.cut)
 COAD.cat <- cbind(COAD.surv.Rac1$bcr_patient_barcode, COAD.cat)
 colnames(COAD.cat)[1] <- "bcr_patient_barcode"
@@ -98,11 +62,9 @@ fit <- surv_fit(Surv(times, patient.vital_status) ~ RAC1, data = COAD.cat)
 
 #Obtaining pvalue for each fit
 surv_pvalue(fit)
-```
 
-# Plot generation
-Finally, we generate a Kaplan Meier plot to illustrate survival patterns across the two patient cohorts.
-```{r message=FALSE, warning = FALSE}
+
+## ----message=FALSE, warning = FALSE-------------------------------------------------------
 #Creating the plots
 ggsurvplot(fit=fit,
                     data=COAD.cat,
@@ -124,4 +86,4 @@ ggsurvplot(fit=fit,
                     tables.theme = theme_bw(),
                     risk.table.y.text.col = T,
                     font.legend=5)
-```
+
